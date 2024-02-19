@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::parser::token::Token;
 use nom::{
     bytes::complete::take_while,
