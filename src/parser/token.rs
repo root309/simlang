@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Int(i64),
     String(String),
@@ -16,9 +16,11 @@ pub enum Token {
     LBrace,
     RBrace,
     Semicolon,
+    Comma,
     Function,
     If,
     Else,
     While,
     Return,
+    EOF,
 }

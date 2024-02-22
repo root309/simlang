@@ -1,15 +1,49 @@
 #![allow(dead_code)]
 use crate::parser::token::Token;
 use nom::{
-    bytes::complete::take_while,
-    branch::alt,
-    bytes::complete::tag,
-    character::complete::{char, digit1, multispace0},
-    combinator::map,
-    sequence::{delimited, preceded},
-    IResult, multi::many0,
+    IResult,
+    //error::{ParseError},
+    character::complete::{
+        //space0,
+        //space1,
+        multispace0,
+        //none_of,
+        char,
+        //line_ending,
+        digit1,
+    },
+    bytes::complete::{
+        take_while,
+        tag,
+        //is_not,
+        //escaped_transform,
+        //take_while_m_n,
+    },
+    //number::complete::{
+        //double,
+    //},
+    branch::{
+        alt,
+        //permutation,
+    },
+    combinator::{
+        //opt,
+        map,
+        //value,
+        //all_consuming,
+    },
+    multi::{
+        many0,
+        //many1,
+        //separated_list0,
+    },
+    sequence::{
+        delimited,
+        preceded,
+        //tuple,
+    },
+    //error::VerboseError,
 };
-
 // 識別子を解析
 fn identifier(input: &str) -> IResult<&str, Token> {
     let parser = take_while(|c: char| c.is_alphanumeric() || c == '_');
@@ -122,9 +156,9 @@ fn keyword(input: &str) -> IResult<&str, Token> {
     )(input)
 }
 
-// トークナイザーを更新
-fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
-    many0(
+
+pub fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
+    let (remaining_input, mut tokens) = many0(
         alt((
             integer,
             identifier,
@@ -144,7 +178,14 @@ fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
             semicolon,
             keyword,
         )),
-    )(input)
+    )(input)?;
+
+    // 入力が完全に消費された場合EOFトークンを追加
+    if remaining_input.is_empty() {
+        tokens.push(Token::EOF);
+    }
+
+    Ok((remaining_input, tokens))
 }
 
 #[cfg(test)]
