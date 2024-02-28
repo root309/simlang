@@ -100,7 +100,24 @@ fn parse_expression(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
     // 現在のトークンが二項演算子であるかどうかをチェックしてあればその演算を処理
     while let Some(op_token) = tokens.first() {
         match op_token {
-            Token::Plus | Token::Minus | Token::Star | Token::Slash | Token::LessThan | Token::GreaterThan => {
+            Token::Plus => {
+                tokens = &tokens[1..]; // +演算子を消費
+                let (new_tokens, right_expr) = parse_expression(tokens)?;
+                tokens = new_tokens;
+
+                // 文字列連結の場合
+                left_expr = match (&left_expr, &right_expr) {
+                    (Expr::Literal(Literal::String(left)), Expr::Literal(Literal::String(right))) => {
+                        Expr::Literal(Literal::String(format!("{}{}", left, right)))
+                    },
+                    _ => Expr::BinaryOp {
+                        left: Box::new(left_expr),
+                        op: Op::Add, // 数値の加算
+                        right: Box::new(right_expr),
+                    },
+                };
+            },
+            Token::Minus | Token::Star | Token::Slash | Token::LessThan | Token::GreaterThan => {
                 // 演算子を消費
                 tokens = &tokens[1..];
                 // 演算子の右側にある式を解析
@@ -110,13 +127,12 @@ fn parse_expression(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
                 left_expr = Expr::BinaryOp {
                     left: Box::new(left_expr),
                     op: match op_token {
-                        Token::Plus => Op::Add,
                         Token::Minus => Op::Subtract,
                         Token::Star => Op::Multiply,
                         Token::Slash => Op::Divide,
                         Token::LessThan => Op::LessThan,
                         Token::GreaterThan => Op::GreaterThan,
-                        _ => return Err("Unsupported binary operator".into()),
+                        _ => unreachable!(),
                     },
                     right: Box::new(right_expr),
                 };
@@ -305,6 +321,10 @@ fn parse_primary(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
             // 整数リテラル
             Ok((&tokens[1..], Expr::Literal(Literal::Int(*value))))
         },
+        // 文字列リテラルの処理
+        Some(Token::String(value)) => {
+            Ok((&tokens[1..], Expr::Literal(Literal::String(value.clone()))))
+        },
         Some(Token::Ident(name)) => {
             // 変数参照
             Ok((&tokens[1..], Expr::Variable(name.clone())))
@@ -420,6 +440,33 @@ mod tests {
 
         let result = parse_tokens(&tokens);
         assert!(result.is_ok(), "Failed to parse while statement: {:?}", result.err());
+    } 
+     
+    #[test]
+    fn test_string_concatenation() {
+        let tokens = vec![
+            Token::Ident("result".to_string()),
+            Token::Equal,
+            Token::String("Hello, ".to_string()),
+            Token::Plus,
+            Token::String("World!".to_string()),
+            Token::Semicolon,
+            Token::EOF,
+        ];
+
+        let expected_expr = Expr::Assignment {
+            name: "result".to_string(),
+            value: Box::new(Expr::Literal(Literal::String("Hello, World!".to_string()))),
+        };
+
+        let result = parse_tokens(&tokens);
+        assert!(result.is_ok(), "Failed to parse string concatenation: {:?}", result.err());
+        
+        // AST確認
+        match result {
+            Ok(expr) => assert_eq!(Expr::Block(vec![expected_expr]), expr, "String concatenation did not match expected output."),
+            Err(_) => assert!(false, "Expression parsing failed"),
+        }
     }
 }
 
