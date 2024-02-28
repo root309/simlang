@@ -20,6 +20,8 @@ fn parse_statement(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
         Some(Token::Ident(_)) => parse_assignment_or_function_call(tokens),
         Some(Token::Function) => parse_function_def(tokens),
         Some(Token::Return) => parse_return_statement(tokens),
+        Some(Token::If) => parse_if_expr(tokens),
+        Some(Token::While) => parse_while_loop(tokens),
         _ => {
             debug_log("Unsupported statement or unexpected token", tokens.first());
             let err_msg = match tokens.first() {
@@ -235,7 +237,9 @@ fn parse_function_call(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
 // if文の解析
 fn parse_if_expr(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
     let (tokens, _) = consume_token(tokens, Token::If)?;  // ifトークンを消費
+    let (tokens, _) = consume_token(tokens, Token::LParen)?;
     let (tokens, condition) = parse_expression(tokens)?;
+    let (tokens, _) = consume_token(tokens, Token::RParen)?; 
     let (tokens, then_expr) = parse_expression(tokens)?;
     let (tokens, else_expr) = if matches!(tokens.first(), Some(Token::Else)) {
         let (tokens, _) = consume_token(tokens, Token::Else)?;
@@ -248,7 +252,7 @@ fn parse_if_expr(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
     Ok((tokens, Expr::IfExpr {
         condition: Box::new(condition),
         consequence: Box::new(then_expr),
-        alternative: else_expr,
+        alternative: None,
     }))
 }
 
@@ -363,6 +367,52 @@ mod tests {
 
         let result = parse_tokens(&tokens);
         assert!(result.is_ok(), "Failed to parse program: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_if_statement() {
+        let tokens = vec![
+            Token::If,
+            Token::LParen,
+            Token::Ident("x".to_string()),
+            Token::LessThan,
+            Token::Int(10),
+            Token::RParen,
+            Token::LBrace,
+            Token::Ident("x".to_string()),
+            Token::Equal,
+            Token::Int(0),
+            Token::Semicolon,
+            Token::RBrace,
+            Token::EOF,
+        ];
+
+        let result = parse_tokens(&tokens);
+        assert!(result.is_ok(), "Failed to parse if statement: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_while_statement() {
+        let tokens = vec![
+            Token::While,
+            Token::LParen,
+            Token::Ident("x".to_string()),
+            Token::LessThan,
+            Token::Int(10),
+            Token::RParen,
+            Token::LBrace,
+            Token::Ident("x".to_string()),
+            Token::Equal,
+            Token::Ident("x".to_string()),
+            Token::Plus,
+            Token::Int(1),
+            Token::Semicolon,
+            Token::RBrace,
+            Token::EOF,
+        ];
+
+        let result = parse_tokens(&tokens);
+        assert!(result.is_ok(), "Failed to parse while statement: {:?}", result.err());
     }
 }
 
