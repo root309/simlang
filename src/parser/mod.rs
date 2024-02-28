@@ -100,7 +100,7 @@ fn parse_expression(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
     // 現在のトークンが二項演算子であるかどうかをチェックしてあればその演算を処理
     while let Some(op_token) = tokens.first() {
         match op_token {
-            Token::Plus | Token::Minus | Token::Star | Token::Slash => {
+            Token::Plus | Token::Minus | Token::Star | Token::Slash | Token::LessThan | Token::GreaterThan => {
                 // 演算子を消費
                 tokens = &tokens[1..];
                 // 演算子の右側にある式を解析
@@ -114,6 +114,8 @@ fn parse_expression(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
                         Token::Minus => Op::Subtract,
                         Token::Star => Op::Multiply,
                         Token::Slash => Op::Divide,
+                        Token::LessThan => Op::LessThan,
+                        Token::GreaterThan => Op::GreaterThan,
                         _ => return Err("Unsupported binary operator".into()),
                     },
                     right: Box::new(right_expr),
@@ -236,23 +238,28 @@ fn parse_function_call(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
 
 // if文の解析
 fn parse_if_expr(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
-    let (tokens, _) = consume_token(tokens, Token::If)?;  // ifトークンを消費
+    let (tokens, _) = consume_token(tokens, Token::If)?;
     let (tokens, _) = consume_token(tokens, Token::LParen)?;
     let (tokens, condition) = parse_expression(tokens)?;
-    let (tokens, _) = consume_token(tokens, Token::RParen)?; 
-    let (tokens, then_expr) = parse_expression(tokens)?;
-    let (tokens, else_expr) = if matches!(tokens.first(), Some(Token::Else)) {
-        let (tokens, _) = consume_token(tokens, Token::Else)?;
-        let (tokens, expr) = parse_expression(tokens)?;
-        (tokens, Some(Box::new(expr)))
-    } else {
-        (tokens, None)  // elseブロックがない場合
+    let (tokens, _) = consume_token(tokens, Token::RParen)?;
+
+    let (tokens, then_expr) = parse_block(tokens)?;
+
+    let tokens = match consume_token(tokens, Token::Else) {
+        Ok((tokens, _)) => tokens,
+        Err(_) => return Ok((tokens, Expr::IfExpr {
+            condition: Box::new(condition),
+            consequence: Box::new(then_expr),
+            alternative: None,
+        })),
     };
+
+    let (tokens, else_expr) = parse_block(tokens)?;
 
     Ok((tokens, Expr::IfExpr {
         condition: Box::new(condition),
         consequence: Box::new(then_expr),
-        alternative: None,
+        alternative: Some(Box::new(else_expr)),
     }))
 }
 
