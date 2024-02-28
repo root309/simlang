@@ -14,6 +14,7 @@ impl Evaluator {
 
     pub fn evaluate(&mut self, expr: Expr) -> Result<Literal, String> {
         match expr {
+            // TODO:関数定義をContextに保存する必要がある(スコープ管理めんどくさそう)
             Expr::FunctionDef { name, params, body } => self.evaluate_function_def(name, params, body),
             Expr::FunctionCall { name, args } => self.evaluate_function_call(name, args),
             Expr::IfExpr { condition, consequence, alternative } => self.evaluate_if_expr(condition, consequence, alternative),
@@ -21,7 +22,8 @@ impl Evaluator {
             Expr::Assignment { name, value } => self.evaluate_assignment(name, *value), 
             Expr::BinaryOp { left, op, right } => self.evaluate_binary_op(*left, op, *right),
             Expr::Literal(lit) => Ok(lit),
-            Expr::Variable(name) => Ok(name),
+            Expr::Variable(name) => self.context.get_variable(&name).cloned().ok_or(format!("Variable '{}' not found", name)),
+            // TODO:Literalの初期値ではなく最後の式の評価結果を返す
             Expr::Block(expressions) => {
                 let mut result = Literal::Int(0); // 初期値orデフォルト値
                 for expression in expressions {
