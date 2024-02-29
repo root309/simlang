@@ -16,14 +16,18 @@ impl Evaluator {
         match expr {
             // TODO:関数定義をContextに保存する必要がある(スコープ管理めんどくさそう)
             Expr::FunctionDef { name, params, body } => self.evaluate_function_def(name, params, body),
+            // TODO:関数定義を取得し、引数を評価して、その関数を実行する必要がある
             Expr::FunctionCall { name, args } => self.evaluate_function_call(name, args),
+            // TODO:条件式を評価して、条件に応じてconsequenceかalternativeを評価する必要がある
             Expr::IfExpr { condition, consequence, alternative } => self.evaluate_if_expr(condition, consequence, alternative),
+            // TODO:条件式を評価して、条件が真の間、bodyを評価し続ける必要がある
             Expr::WhileLoop { condition, body } => self.evaluate_while_loop(condition, body),
             Expr::Assignment { name, value } => self.evaluate_assignment(name, *value), 
             Expr::BinaryOp { left, op, right } => self.evaluate_binary_op(*left, op, *right),
             Expr::Literal(lit) => Ok(lit),
             Expr::Variable(name) => self.context.get_variable(&name).cloned().ok_or(format!("Variable '{}' not found", name)),
             // TODO:Literalの初期値ではなく最後の式の評価結果を返す
+            // TODO:Returnの評価結果を返す(return文がある場合はその値を返し処理を中断する)
             Expr::Block(expressions) => {
                 let mut result = Literal::Int(0); // 初期値orデフォルト値
                 for expression in expressions {
@@ -37,19 +41,19 @@ impl Evaluator {
     }
 
     fn evaluate_function_def(&mut self, name: String, params: Vec<String>, body: Expr) -> Result<Literal, String> {
-
+        // TODO:
     }
 
     fn evaluate_function_call(&mut self, name: String, args: Vec<Expr>) -> Result<Literal, String> {
-       
+        // TODO:
     }
 
     fn evaluate_if_expr(&mut self, condition: Expr, consequence: Expr, alternative: Expr) -> Result<Literal, String> {
-
+        // TODO:
     }
 
     fn evaluate_while_loop(&mut self, condition: Expr, body: Expr) -> Result<Literal, String> {
-
+        // TODO:
     }
 
     fn evaluate_assignment(&mut self, name: String, value: Expr) -> Result<Literal, String> {
@@ -77,7 +81,7 @@ impl Evaluator {
     }
 
     fn evaluate_literal(&self, lit: Literal) -> Result<Literal, String> {
-
+        // TODO:
     }
 
     fn evaluate_variable(&self, name: &str) -> Result<Literal, String> {
@@ -95,7 +99,7 @@ impl Evaluator {
     }
 
     fn evaluate_return(&mut self, expr: Expr) -> Result<Literal, String> {
-        
+        // TODO: 
     }
 
 }

@@ -20,5 +20,5 @@ impl Context {
         self.variables.get(name)
     }
 
-    // TODO
+    // TODO:関数定義をContextに保存する必要がある
 }
