@@ -37,6 +37,7 @@ pub enum Expr {
 pub enum Literal {
     Int(i64),
     String(String),
+    Unit,
 }
 
 #[derive(Debug, PartialEq)]
