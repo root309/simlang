@@ -2,13 +2,13 @@ use crate::parser::ast::{Expr, Op, Literal};
 use std::collections::HashMap;
 
 pub struct Evaluator {
-    context: Context,
+    ctx: Context,
 }
 
 impl Evaluator {
     pub fn new() -> Self {
         Evaluator {
-            context: Context::new(),
+            ctx: Context::new(),
         }
     }
 
@@ -25,7 +25,7 @@ impl Evaluator {
             Expr::Assignment { name, value } => self.evaluate_assignment(name, *value), 
             Expr::BinaryOp { left, op, right } => self.evaluate_binary_op(*left, op, *right),
             Expr::Literal(lit) => Ok(lit),
-            Expr::Variable(name) => self.context.get_variable(&name).cloned().ok_or(format!("Variable '{}' not found", name)),
+            Expr::Variable(name) => self.ctx.get_variable(&name).cloned().ok_or(format!("Variable '{}' not found", name)),
             // TODO:Literalの初期値ではなく最後の式の評価結果を返す
             // TODO:Returnの評価結果を返す(return文がある場合はその値を返し処理を中断する)
             Expr::Block(expressions) => {
@@ -58,7 +58,7 @@ impl Evaluator {
 
     fn evaluate_assignment(&mut self, name: String, value: Expr) -> Result<Literal, String> {
         let val = self.evaluate(*value)?;
-        self.context.set_variable(name, val.clone());
+        self.ctx.set_variable(name, val.clone());
         Ok(val)
     }
 
@@ -85,7 +85,7 @@ impl Evaluator {
     }
 
     fn evaluate_variable(&self, name: &str) -> Result<Literal, String> {
-        self.context.get_variable(&name).ok_or(format!("Variable '{}' not found", name))
+        self.ctx.get_variable(&name).ok_or(format!("Variable '{}' not found", name))
     }
 
     fn evaluate_block(&mut self, expressions: Vec<Expr>) -> Result<Literal, String> {
