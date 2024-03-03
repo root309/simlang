@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
     FunctionDef {
         name: String,
@@ -33,14 +33,14 @@ pub enum Expr {
     Return(Box<Expr>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
     Int(i64),
     String(String),
     Unit,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Op {
     Add,
     Subtract,
