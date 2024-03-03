@@ -39,13 +39,39 @@ impl Evaluator {
             _ => Err("Unimplemented expression type".to_string()),
         }
     }
-
+    
     fn evaluate_function_def(&mut self, name: String, params: Vec<String>, body: Expr) -> Result<Literal, String> {
-        // TODO:
+        // 関数定義をコンテキストに保存
+        self.ctx.set_function(name, params, body);
+        Ok(Literal::Unit) // 特に値を返さないからUnit型を返す
     }
-
+    
     fn evaluate_function_call(&mut self, name: String, args: Vec<Expr>) -> Result<Literal, String> {
-        // TODO:
+        if let Some(Value::Function(params, body)) = self.ctx.get_function(&name) {
+            if params.len() != args.len() {
+                return Err(format!("Expected {} arguments, got {}", params.len(), args.len()));
+            }
+
+            // 新しいスコープをプッシュ
+            self.ctx.push_scope();
+
+            // 引数を評価し、ローカルスコープに設定
+            for (param, arg) in params.iter().zip(args.iter()) {
+                let arg_val = self.evaluate(arg.clone())?; // 引数を評価
+                let value = Value::from_literal(arg_val)?; // LiteralからValueへ変換
+                self.ctx.set_variable(param.clone(), value);
+            }
+
+            // 関数本体を評価
+            let result = self.evaluate(*body)?;
+
+            // スコープをポップ
+            self.ctx.pop_scope();
+
+            Ok(result)
+        } else {
+            Err(format!("Function '{}' not found", name))
+        }
     }
 
     fn evaluate_if_expr(&mut self, condition: Expr, consequence: Expr, alternative: Expr) -> Result<Literal, String> {
