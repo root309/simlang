@@ -6,14 +6,16 @@ pub enum Value {
     String(String),
     Function(Vec<String>, Box<Expr>),
 }
-
 pub struct Context {
     variables: HashMap<String, Value>,
-    functions: HashMap<String, Value>,
+    functions: HashMap<String, (Vec<String>, Box<Expr>)>, // 関数定義はここに保持される
+    variable_stack: Vec<HashMap<String, Value>>, // 変数のスコープ管理
+}
+pub struct Context {
+    variables: HashMap<String, Value>,
+    functions: HashMap<String, (Vec<String>, Box<Expr>)>,    
     // 変数のスコープを管理するスタック
     variable_stack: Vec<HashMap<String, Value>>,
-    // 関数のスコープを管理するスタック
-    function_stack: Vec<HashMap<String, Value>>,
 }
 
 impl Context {
