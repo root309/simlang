@@ -73,13 +73,37 @@ impl Evaluator {
             Err(format!("Function '{}' not found", name))
         }
     }
-
-    fn evaluate_if_expr(&mut self, condition: Expr, consequence: Expr, alternative: Expr) -> Result<Literal, String> {
-        // TODO:
+    
+    fn evaluate_if_expr(&mut self, condition: Expr, consequence: Expr, alternative: Option<Box<Expr>>) -> Result<Literal, String> {
+        let condition_result = self.evaluate(condition)?;
+        match condition_result {
+            Literal::Int(value) => {
+                if value != 0 {
+                    self.evaluate(*consequence)
+                } else if let Some(alt) = alternative {
+                    self.evaluate(*alt)
+                } else {
+                    Ok(Literal::Int(0)) // if文にelseがない場合
+                }
+            },
+            _ => Err("Condition must be an integer".into()),
+        }
     }
 
     fn evaluate_while_loop(&mut self, condition: Expr, body: Expr) -> Result<Literal, String> {
-        // TODO:
+        loop {
+            let condition_result = self.evaluate(condition.clone())?;
+            match condition_result {
+                Literal::Int(value) => {
+                    if value == 0 {
+                        break;
+                    }
+                    self.evaluate(body.clone())?;
+                },
+                _ => return Err("Condition must be an integer".into()),
+            }
+        }
+        Ok(Literal::Int(0)) // whileループの結果として特に値を返さない
     }
 
     fn evaluate_assignment(&mut self, name: String, value: Expr) -> Result<Literal, String> {
@@ -88,7 +112,6 @@ impl Evaluator {
         Ok(val)
     }
 
-    
     fn evaluate_binary_op(&mut self, left: Expr, op: Op, right: Expr) -> Result<Literal, String> {
         let left_val = self.evaluate(left)?;
         let right_val = self.evaluate(right)?;
