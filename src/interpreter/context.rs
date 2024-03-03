@@ -6,11 +6,18 @@ pub enum Value {
     String(String),
     Function(Vec<String>, Box<Expr>),
 }
-pub struct Context {
-    variables: HashMap<String, Value>,
-    functions: HashMap<String, (Vec<String>, Box<Expr>)>, // 関数定義はここに保持される
-    variable_stack: Vec<HashMap<String, Value>>, // 変数のスコープ管理
+
+impl Value {
+    // LiteralからValueへの変換を行うメソッド
+    pub fn from_literal(literal: Literal) -> Result<Self, String> {
+        match literal {
+            Literal::Int(value) => Ok(Value::Int(value)),
+            Literal::String(value) => Ok(Value::String(value)),
+            _ => Err("Unsupported literal type for conversion".into()),
+        }
+    }
 }
+
 pub struct Context {
     variables: HashMap<String, Value>,
     functions: HashMap<String, (Vec<String>, Box<Expr>)>,    
