@@ -1,14 +1,11 @@
-//#![allow(dead_code)]
-
 pub mod lexer;
 pub mod token;
 pub mod ast;
 
 use crate::utils::{
-    debug_token,
+    //debug_token,
     debug_log,
 };
-//use crate::parser::lexer::tokenizer;
 use crate::parser::ast::{Expr, Op, Literal};
 use crate::parser::token::Token;
 
@@ -22,11 +19,11 @@ fn parse_statement(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
             match next_token {
                 Some(Token::Assignment) => parse_assignment(tokens),
                 Some(Token::LParen) => parse_function_call(tokens),
-                Some(Token::Plus) | Some(Token::Minus) | Some(Token::Star) | Some(Token::Slash) | Some(Token::LessThan) | Some(Token::GreaterThan) => parse_expression(tokens),
+                Some(Token::Plus) | Some(Token::Minus) | Some(Token::Star) | Some(Token::Slash) | Some(Token::LessThan) | Some(Token::GreaterThan) => parse_expression_statement(tokens),
                 _ => Err(format!("Unexpected token after identifier '{}': {:?}", ident, next_token)),
             }
         },
-        Some(Token::Plus) | Some(Token::Minus) | Some(Token::Star) | Some(Token::Slash) => parse_expression(tokens),    
+        Some(Token::Plus) | Some(Token::Minus) | Some(Token::Star) | Some(Token::Slash) => parse_expression_statement(tokens),    
         Some(Token::Function) => parse_function_def(tokens),
         Some(Token::Return) => parse_return_statement(tokens),
         Some(Token::If) => parse_if_expr(tokens),
@@ -39,6 +36,19 @@ fn parse_statement(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
     };
     debug_log("Exiting parse_statement", tokens.first());
     result
+}
+
+fn parse_expression_statement(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
+    debug_log("Entering parse_expression_statement with token", tokens.first());
+    let (new_tokens, expr) = parse_expression(tokens)?;
+    
+    let new_tokens = match new_tokens.first() {
+        Some(&Token::Semicolon) => &new_tokens[1..],
+        _ => return Err("Expected semicolon at the end of expression statement".into()),
+    };
+    
+    debug_log("Exiting parse_expression_statement", new_tokens.first());
+    Ok((new_tokens, expr))
 }
 
 // トークン列からブロックを解析する関数
@@ -156,7 +166,12 @@ fn parse_assignment(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
     let (tokens, ident) = parse_identifier(tokens)?;
     let tokens = consume_token(tokens, Token::Assignment)?.0;
     let (tokens, expr) = parse_expression(tokens)?; // 式の解析
-    let tokens = consume_token(tokens, Token::Semicolon)?.0; // セミコロンの消費
+                                                                                                     
+    let tokens = match tokens.first() {
+        Some(Token::Semicolon) => &tokens[1..], // セミコロンを消費
+        _ => return Err("Expected semicolon at the end of the assignment".into()),
+    };
+                                                             
     debug_log("Exiting parse_assignment", tokens.first());
     Ok((tokens, Expr::Assignment { name: ident, value: Box::new(expr) }))
 }

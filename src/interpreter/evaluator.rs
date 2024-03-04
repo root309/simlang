@@ -54,8 +54,7 @@ impl Evaluator {
                 Ok(EvaluationResult::Value(result))
             },
             Expr::Block(expressions) => self.evaluate_block(expressions),
-            Expr::Return(expr) => self.evaluate_return(*expr),
-            _ => Err("Unimplemented expression type".to_string()),
+            Expr::Return(expr) => self.evaluate_return(*expr), 
         }
     }
     
@@ -179,16 +178,15 @@ impl Evaluator {
             None => Err(format!("Variable '{}' not found", name)),
         }
     }
-    
+        
     fn evaluate_block(&mut self, expressions: Vec<Expr>) -> Result<EvaluationResult, String> {
+        let mut result = EvaluationResult::Value(Literal::Unit); // デフォルトの結果をUnitとする
+
         for expression in expressions {
-            let evaluated_result = self.evaluate(expression)?;
-            match evaluated_result {
-                EvaluationResult::ReturnValue(val) => return Ok(EvaluationResult::ReturnValue(val)),
-                _ => continue,
-            }
+            result = self.evaluate(expression)?;
         }
-        Ok(EvaluationResult::Value(Literal::Unit)) // ブロックが何も返さない場合、Unitを返す
+
+        Ok(result) // ブロック内の最後の式の評価結果を返す
     }
 
     fn evaluate_return(&mut self, expr: Expr) -> Result<EvaluationResult, String> {
