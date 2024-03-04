@@ -12,8 +12,10 @@ use nom::{
         //line_ending,
         digit1,
     },
+    
     bytes::complete::{
         take_while,
+        take_while1,
         tag,
         //is_not,
         //escaped_transform,
@@ -27,6 +29,7 @@ use nom::{
         //permutation,
     },
     combinator::{
+        recognize,
         //opt,
         map,
         //value,
@@ -38,16 +41,26 @@ use nom::{
         //separated_list0,
     },
     sequence::{
+        pair,
         delimited,
         preceded,
         //tuple,
     },
     //error::VerboseError,
 };
+
 // 識別子を解析
 fn identifier(input: &str) -> IResult<&str, Token> {
-    let parser = take_while(|c: char| c.is_alphanumeric() || c == '_');
-    let (input, ident) = parser(input)?;
+    println!("Trying identifier with input: {}", input);
+    // 識別子がアルファベットまたはアンダースコアで始まることを確認
+    let start_parser = take_while1(|c: char| c.is_alphabetic() || c == '_');
+    // 続く文字がアルファベット、数字、アンダースコアの任意の組み合わせであることを確認
+    let rest_parser = take_while(|c: char| c.is_alphanumeric() || c == '_');
+    // 両方のパーサーを組み合わせる
+    let mut combined_parser = recognize(pair(start_parser, rest_parser));
+
+    let (input, ident) = combined_parser(input)?;
+    println!("Identifier parsed: {}", ident);
     Ok((input, Token::Ident(ident.to_string())))
 }
 
@@ -113,8 +126,19 @@ fn greater_than(input: &str) -> IResult<&str, Token> {
 }
 
 // '='
-fn equal(input: &str) -> IResult<&str, Token> {
-    map(ws(char('=')), |_| Token::Equal)(input)
+fn assignment(input: &str) -> IResult<&str, Token> {
+    println!("Trying assignment with input: {}", input);
+    let result = map(ws(char('=')), |_| Token::Assignment)(input);
+    match &result {
+        Ok((remaining, _)) => println!("Assignment success, remaining: {}", remaining),
+        Err(_) => println!("Assignment failed"),
+    }
+    result
+}
+
+// '=='
+fn double_equal(input: &str) -> IResult<&str, Token> {
+    map(ws(tag("==")), |_| Token::Equal)(input)
 }
 
 // '('
@@ -170,7 +194,8 @@ pub fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
             modulo,
             less_than,
             greater_than,
-            equal,
+            double_equal,
+            assignment,
             l_paren,
             r_paren,
             l_brace,
@@ -180,6 +205,9 @@ pub fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
         )),
     )(input)?;
 
+    println!("Remaining input: {:?}", remaining_input); // 残りの入力を表示
+    println!("Tokens: {:?}", tokens); // 解析したトークンを表示
+                                      //
     // 入力が完全に消費された場合EOFトークンを追加
     if remaining_input.is_empty() {
         tokens.push(Token::EOF);
@@ -220,7 +248,7 @@ mod tests {
     fn test_comparison_operators() {
         assert_eq!(less_than("<"), Ok(("", Token::LessThan)));
         assert_eq!(greater_than(">"), Ok(("", Token::GreaterThan)));
-        assert_eq!(equal("="), Ok(("", Token::Equal)));
+        assert_eq!(double_equal("=="), Ok(("", Token::Equal)));
     }
 
     #[test]
@@ -243,5 +271,21 @@ mod tests {
         assert_eq!(keyword("else"), Ok(("", Token::Else)));
         assert_eq!(keyword("while"), Ok(("", Token::While)));
         assert_eq!(keyword("return"), Ok(("", Token::Return)));
+    }
+    
+    #[test]
+    fn test_valid_assignment() {
+        let input = "hello = 10;";
+        if let Ok((_, tokens)) = tokenizer(input) {
+            assert_eq!(tokens, vec![
+                Token::Ident("hello".to_string()),
+                Token::Assignment,
+                Token::Int(10),
+                Token::Semicolon,
+                Token::EOF,
+            ]);
+        } else {
+            panic!("Tokenizer failed to parse the input.");
+        }
     }
 }

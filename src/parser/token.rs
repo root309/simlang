@@ -3,6 +3,7 @@ pub enum Token {
     Int(i64),
     String(String),
     Ident(String), // identifier
+    Assignment,
     Plus,
     Minus,
     Star,
