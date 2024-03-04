@@ -138,7 +138,7 @@ fn assignment(input: &str) -> IResult<&str, Token> {
 
 // '=='
 fn double_equal(input: &str) -> IResult<&str, Token> {
-    map(ws(tag("==")), |_| Token::Equal)(input)
+    map(ws(tag("==")), |_| Token::DoubleEqual)(input)
 }
 
 // '('
@@ -207,7 +207,7 @@ pub fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
 
     println!("Remaining input: {:?}", remaining_input); // 残りの入力を表示
     println!("Tokens: {:?}", tokens); // 解析したトークンを表示
-                                      //
+                                      
     // 入力が完全に消費された場合EOFトークンを追加
     if remaining_input.is_empty() {
         tokens.push(Token::EOF);
@@ -248,7 +248,7 @@ mod tests {
     fn test_comparison_operators() {
         assert_eq!(less_than("<"), Ok(("", Token::LessThan)));
         assert_eq!(greater_than(">"), Ok(("", Token::GreaterThan)));
-        assert_eq!(double_equal("=="), Ok(("", Token::Equal)));
+        assert_eq!(double_equal("=="), Ok(("", Token::DoubleEqual)));
     }
 
     #[test]

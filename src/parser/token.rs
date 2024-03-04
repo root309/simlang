@@ -11,7 +11,7 @@ pub enum Token {
     Modulo,
     LessThan,
     GreaterThan,
-    Equal,
+    DoubleEqual,
     LParen,
     RParen,
     LBrace,

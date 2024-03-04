@@ -16,18 +16,24 @@ use crate::parser::token::Token;
 // トークン列から単一の文を解析する関数
 fn parse_statement(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
     debug_log("Entering parse_statement with token", tokens.first());
-    let result = match tokens.first() {
-        Some(Token::Ident(_)) => parse_assignment_or_function_call(tokens),
+    let result = match tokens.first() { 
+        Some(Token::Ident(ident)) => {
+            let next_token = tokens.get(1); // 次のトークンを取得
+            match next_token {
+                Some(Token::Assignment) => parse_assignment(tokens),
+                Some(Token::LParen) => parse_function_call(tokens),
+                Some(Token::Plus) | Some(Token::Minus) | Some(Token::Star) | Some(Token::Slash) | Some(Token::LessThan) | Some(Token::GreaterThan) => parse_expression(tokens),
+                _ => Err(format!("Unexpected token after identifier '{}': {:?}", ident, next_token)),
+            }
+        },
+        Some(Token::Plus) | Some(Token::Minus) | Some(Token::Star) | Some(Token::Slash) => parse_expression(tokens),    
         Some(Token::Function) => parse_function_def(tokens),
         Some(Token::Return) => parse_return_statement(tokens),
         Some(Token::If) => parse_if_expr(tokens),
         Some(Token::While) => parse_while_loop(tokens),
         _ => {
-            debug_log("Unsupported statement or unexpected token", tokens.first());
-            let err_msg = match tokens.first() {
-                Some(token) => debug_token("Identifier or other expected token", token),
-                None => "Unexpected end of input".to_owned(),
-            };
+            let err_msg = format!("Unsupported statement or unexpected token: {:?}", tokens.first());
+            debug_log(&err_msg, None);
             Err(err_msg)
         },
     };
@@ -144,51 +150,15 @@ fn parse_expression(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
     Ok((tokens, left_expr))
 }
 
-fn parse_binary_op(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
-    let (tokens, left_expr) = parse_expression(tokens)?;
-    match tokens.first() {
-        Some(Token::Plus) => {
-            let tokens = consume_token(tokens, Token::Plus)?.0;
-            let (tokens, right_expr) = parse_expression(tokens)?;
-            Ok((tokens, Expr::BinaryOp {
-                left: Box::new(left_expr),
-                op: Op::Add,
-                right: Box::new(right_expr),
-            }))
-        },
-        _ => Ok((tokens, left_expr)), // オペレーターがない場合は左辺の式をそのまま返す
-    }
-}
-
+// 代入文を解析
 fn parse_assignment(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
+    debug_log("Entering parse_assignment with token", tokens.first());
     let (tokens, ident) = parse_identifier(tokens)?;
-    let tokens = consume_token(tokens, Token::Equal)?.0;
-    let (tokens, value) = parse_expression(tokens)?;
-    Ok((tokens, Expr::Assignment { name: ident, value: Box::new(value) }))
-}
-
-// 代入文または関数呼び出しを解析
-fn parse_assignment_or_function_call(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
-    let (tokens, ident) = parse_identifier(tokens)?;
-    
-    match tokens.first() {
-        Some(Token::Equal) => {
-            // 代入文の解析
-            let tokens = consume_token(tokens, Token::Equal)?.0;
-            let (tokens, expr) = parse_expression(tokens)?; // 式の解析
-            let tokens = consume_token(tokens, Token::Semicolon)?.0; // セミコロンの消費
-            Ok((tokens, Expr::Assignment { name: ident, value: Box::new(expr) }))
-        },
-        Some(Token::LParen) => {
-            // 関数呼び出しの解析
-            let (tokens, _) = consume_token(tokens, Token::LParen)?;
-            let (tokens, args) = parse_arguments(tokens)?;
-            let tokens = consume_token(tokens, Token::RParen)?.0;
-            let tokens = consume_token(tokens, Token::Semicolon)?.0; // セミコロンの消費
-            Ok((tokens, Expr::FunctionCall { name: ident, args }))
-        },
-        _ => Err(String::from("Expected '=' for assignment or '(' for function call")),
-    }
+    let tokens = consume_token(tokens, Token::Assignment)?.0;
+    let (tokens, expr) = parse_expression(tokens)?; // 式の解析
+    let tokens = consume_token(tokens, Token::Semicolon)?.0; // セミコロンの消費
+    debug_log("Exiting parse_assignment", tokens.first());
+    Ok((tokens, Expr::Assignment { name: ident, value: Box::new(expr) }))
 }
 
 // 引数リストを解析
@@ -407,7 +377,7 @@ mod tests {
             Token::RParen,
             Token::LBrace,
             Token::Ident("x".to_string()),
-            Token::Equal,
+            Token::Assignment,
             Token::Int(0),
             Token::Semicolon,
             Token::RBrace,
@@ -429,7 +399,7 @@ mod tests {
             Token::RParen,
             Token::LBrace,
             Token::Ident("x".to_string()),
-            Token::Equal,
+            Token::Assignment,
             Token::Ident("x".to_string()),
             Token::Plus,
             Token::Int(1),
@@ -446,7 +416,7 @@ mod tests {
     fn test_string_concatenation() {
         let tokens = vec![
             Token::Ident("result".to_string()),
-            Token::Equal,
+            Token::Assignment,
             Token::String("Hello, ".to_string()),
             Token::Plus,
             Token::String("World!".to_string()),
