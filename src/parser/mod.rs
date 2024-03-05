@@ -9,11 +9,65 @@ use crate::utils::{
 use crate::parser::ast::{Expr, Op, Literal};
 use crate::parser::token::Token;
 
+struct Parser {
+    tokens: Token,
+    current: usize,
+}
+
+impl Parser { 
+    // 現在のトークンを返す
+    fn current_token(&self) -> Option<&Token> {
+        
+    }
+
+    // 次のトークンを返す（現在のトークンを進める）
+    fn next_token(&mut self) -> Option<&Token> {
+    }
+
+    // 次のトークンを先読みするだけで現在のトークンは進めない
+    fn peek_token(&self) -> Option<&Token> {
+    }
+    fn consume_token(&mut self, expected: Token) -> Result<Token, String> {
+    }
+    fn parse_statement(&mut self) -> Result<Expr, String> {
+    }
+    fn parse_expression_statement(&mut self) -> Result<Expr, String> {
+    }
+    fn parse_block(&mut self) -> Result<Expr, String> {
+    }
+    fn parse_identifier(&mut self) -> Result<String, String> {
+    }
+    fn parse_parameters(&mut self) -> Result<Vec<String>, String> {
+    }
+    fn parse_expression(&mut self) -> Result<Expr, String> {
+    }
+    fn parse_assignment(&mut self) -> Result<Expr, String> {
+    }
+    fn parse_arguments(&mut self) -> Result<Vec<Expr>, String> {
+    }
+    fn parse_function_def(&mut self) -> Result<Expr, String> {
+    }
+    fn parse_function_call(&mut self) -> Result<Expr, String> {
+    }
+    fn parse_if_expr(&mut self) -> Result<Expr, String> {
+    }
+    fn parse_while_loop(&mut self) -> Result<Expr, String> {
+    }
+    fn parse_return_statement(&mut self) -> Result<Expr, String> {
+    }
+    fn parse_primary(&mut self) -> Result<Expr, String> {
+    }
+    fn parse_tokens(&mut self) -> Result<Expr, String> {
+    }
+
+}
+
 // utils
 // トークン列から単一の文を解析する関数
 fn parse_statement(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
     debug_log("Entering parse_statement with token", tokens.first());
     let result = match tokens.first() { 
+        Some(Token::Function) => parse_function_def(tokens),
         Some(Token::Ident(ident)) => {
             let next_token = tokens.get(1); // 次のトークンを取得
             match next_token {
@@ -24,7 +78,6 @@ fn parse_statement(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
             }
         },
         Some(Token::Plus) | Some(Token::Minus) | Some(Token::Star) | Some(Token::Slash) => parse_expression_statement(tokens),    
-        Some(Token::Function) => parse_function_def(tokens),
         Some(Token::Return) => parse_return_statement(tokens),
         Some(Token::If) => parse_if_expr(tokens),
         Some(Token::While) => parse_while_loop(tokens),
@@ -51,19 +104,30 @@ fn parse_expression_statement(tokens: &[Token]) -> Result<(&[Token], Expr), Stri
     Ok((new_tokens, expr))
 }
 
+fn verify_function_name_token(tokens: &[Token]) -> Result<(), String> {
+    match tokens.first() {
+        Some(Token::Ident(_)) => Ok(()),
+        _ => Err("Expected identifier after 'function' keyword".to_string()),
+    }
+}
+
 // トークン列からブロックを解析する関数
 fn parse_block(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
+    debug_log("Entering parse_block", tokens.first());
     let (tokens, _) = consume_token(tokens, Token::LBrace)?;
     let mut statements = Vec::new();
 
     let mut tokens = tokens;
     while !matches!(tokens.first(), Some(Token::RBrace) | None) {
+        debug_log("Parsing statement within block", tokens.first());
         let (new_tokens, stmt) = parse_statement(tokens)?;
         statements.push(stmt);
         tokens = new_tokens;
+        debug_log("Statement parsed within block", tokens.first());
     }
 
     let (tokens, _) = consume_token(tokens, Token::RBrace)?;
+    debug_log("Exiting parse_block", tokens.first());
     Ok((tokens, Expr::Block(statements)))
 }
 
@@ -79,6 +143,13 @@ fn consume_token(tokens: &[Token], expected: Token) -> Result<(&[Token], Token),
     match tokens.split_first() {
         Some((token, rest)) if *token == expected => Ok((rest, token.clone())),
         _ => Err(format!("Expected {:?}, found {:?}", expected, tokens.first())),
+    }
+}
+
+fn consume_semicolon(tokens: &[Token]) -> Result<(&[Token], ()), String> {
+    match tokens.first() {
+        Some(&Token::Semicolon) => Ok((&tokens[1..], ())),
+        _ => Err("Expected semicolon".to_string()),
     }
 }
 
@@ -207,32 +278,44 @@ fn parse_arguments(tokens: &[Token]) -> Result<(&[Token], Vec<Expr>), String> {
 }
 
 // トークン列から関数定義を解析する関数
-fn parse_function_def(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
-    let (tokens, _) = consume_token(tokens, Token::Function)?;
-    let (tokens, name) = parse_identifier(tokens)?;
-    let (tokens, _) = consume_token(tokens, Token::LParen)?;
+fn parse_function_def(context: &mut ParserContext) -> Result<Expr, String> {
+    context.next_token(); // `Function` トークンをスキップ
 
-    let (tokens, params) = parse_parameters(tokens)?;
+    // 関数名の識別子を確認
+    let name = match context.current_token() {
+        Some(Token::Ident(name)) => {
+            context.next_token(); // 識別子トークンを進める
+            name.clone()
+        },
+        _ => return Err("Expected identifier after 'function' keyword".to_string()),
+    };
 
-    let (tokens, _) = consume_token(tokens, Token::RParen)?;
-    let (tokens, body) = parse_block(tokens)?;
+    // 以降のトークンからパラメータリストの開始を示す '(' を確認
+    match context.current_token() {
+        Some(Token::LParen) => context.next_token(), // '(' トークンを消費
+        _ => return Err("Expected '(' after function name".to_string()),
+    };
 
-    Ok((tokens, Expr::FunctionDef { name, params, body: Box::new(body) }))
+    let params = parse_parameters(context)?; // パラメータリストの解析
+
+    let body = parse_block(context)?; // 関数本体の解析
+
+    Ok(Expr::FunctionDef { name, params, body: Box::new(body) })
 }
 
 // 関数呼び出しの解析
 fn parse_function_call(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
-    debug_log("Attempting to parse function call with token", tokens.first());
+    debug_log("Entering parse_function_call", tokens.first());
     let (tokens, name) = parse_identifier(tokens)?;
     let (tokens, _) = consume_token(tokens, Token::LParen)?;
     debug_log("Parsing function call arguments for", Some(&Token::Ident(name.clone())));
 
     let (tokens, args) = parse_arguments(tokens)?;
 
-    debug_log("Finished parsing function call arguments for", Some(&Token::Ident(name.clone())));
     let (tokens, _) = consume_token(tokens, Token::RParen)
         .map_err(|_| "Expected closing parenthesis for function call".to_string())?;
     debug_log("Successfully parsed function call", Some(&Token::RParen));
+    let (tokens, _) = consume_semicolon(tokens)?;
     Ok((tokens, Expr::FunctionCall { name, args }))
 }
 
@@ -266,14 +349,17 @@ fn parse_if_expr(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
 
 // while文の解析
 fn parse_while_loop(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
-    let (tokens, _) = consume_token(tokens, Token::While)?;  // whileトークンを消費しtokensを更新
-    let (tokens, condition) = parse_expression(tokens)?;  // 条件式を解析
-    let (tokens, body) = parse_block(tokens)?;  // ブロックを解析
+    debug_log("Entering parse_while_loop", tokens.first());
 
-    Ok((tokens, Expr::WhileLoop {
-        condition: Box::new(condition),
-        body: Box::new(body),
-    }))
+    let tokens = &tokens[1..]; // `while`トークンを消費
+
+    let (tokens, condition) = parse_expression(tokens)?; // 条件式を解析
+    debug_log("Parsed condition in while loop", tokens.first());
+
+    let (tokens, body) = parse_block(tokens)?; // ブロックを解析
+    debug_log("Parsed block in while loop", tokens.first());
+
+    Ok((tokens, Expr::WhileLoop { condition: Box::new(condition), body: Box::new(body) }))
 }
 
 fn parse_return_statement(tokens: &[Token]) -> Result<(&[Token], Expr), String> {
@@ -348,6 +434,7 @@ pub fn parse_tokens(input: &[Token]) -> Result<Expr, String> {
 mod tests {
     use super::*;
     use crate::parser::token::Token;
+    use crate::parser::lexer::tokenizer; 
 
     #[test]
     fn test_function_call() {
@@ -452,6 +539,43 @@ mod tests {
             Ok(expr) => assert_eq!(Expr::Block(vec![expected_expr]), expr, "String concatenation did not match expected output."),
             Err(_) => assert!(false, "Expression parsing failed"),
         }
+    }
+    #[test]
+    fn test_function_definition_and_call() {
+        // ソースコードをトークン列に変換
+        let source = r#"
+        function add(x, y) {
+            return x + y;
+        };
+
+        add(100, 200);
+        "#;
+        let (_, tokens) = tokenizer(source).expect("Tokenization failed");
+
+        // パーサーを実行
+        let ast = parse_tokens(&tokens).expect("Failed to parse tokens");
+
+        // 期待されるAST
+        let expected_ast = Expr::Block(vec![
+            Expr::FunctionDef {
+                name: "add".to_string(),
+                params: vec!["x".to_string(), "y".to_string()],
+                body: Box::new(Expr::Block(vec![
+                    Expr::Return(Box::new(Expr::BinaryOp {
+                        left: Box::new(Expr::Variable("x".to_string())),
+                        op: Op::Add,
+                        right: Box::new(Expr::Variable("y".to_string())),
+                    })),
+                ])),
+            },
+            Expr::FunctionCall {
+                name: "add".to_string(),
+                args: vec![Expr::Literal(Literal::Int(100)), Expr::Literal(Literal::Int(200))],
+            },
+        ]);
+
+        // 結果を検証
+        assert_eq!(ast, expected_ast, "AST did not match the expected output");
     }
 }
 

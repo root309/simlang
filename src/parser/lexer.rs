@@ -184,6 +184,7 @@ fn keyword(input: &str) -> IResult<&str, Token> {
 pub fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
     let (remaining_input, mut tokens) = many0(
         alt((
+            keyword,
             integer,
             identifier,
             string_literal,
@@ -201,7 +202,6 @@ pub fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
             l_brace,
             r_brace,
             semicolon,
-            keyword,
         )),
     )(input)?;
 
@@ -287,5 +287,11 @@ mod tests {
         } else {
             panic!("Tokenizer failed to parse the input.");
         }
+    }
+
+    #[test]
+    fn test_function_def() {
+        let input = "function add(a, b) { return a + b; };";
+        assert!(tokenizer(input).is_ok());
     }
 }
