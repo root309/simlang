@@ -3,7 +3,7 @@ use sim::parser::Parser;
 use sim::interpreter::evaluator::{Evaluator, EvaluationResult};
 
 fn main() {
-    let source_code = std::fs::read_to_string("examples/while.sim")
+    let source_code = std::fs::read_to_string("examples/if.sim")
         .expect("Failed to read the source file.");
     println!("Source code: {}", source_code);
     let (_, tokens) = tokenizer(&source_code)
