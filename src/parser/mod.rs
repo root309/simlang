@@ -15,6 +15,9 @@ pub struct Parser {
 }
 
 impl Parser { 
+    pub fn new(tokens: Vec<Token>) -> Self {
+        Self { tokens, current: 0 }
+    }
     // return current token
     fn current_token(&self) -> Option<&Token> {
        let token = self.tokens.get(self.current);
@@ -36,6 +39,19 @@ impl Parser {
         }
     }
 
+    fn expect_token(&mut self, expected: Token) -> Result<(), String> {
+        if let Some(token) = self.current_token() {
+            if std::mem::discriminant(token) == std::mem::discriminant(&expected) {
+                self.next_token();
+                Ok(())
+            } else {
+                Err(format!("Expected {:?}, found {:?}", expected, token))
+            }
+        } else {
+            Err("No more tokens available".into())
+        }
+    }
+
     fn consume_token(&mut self, expected: Token) -> Result<Token, String> {
         if let Some(current_token) = self.current_token() {
             let is_expected = std::mem::discriminant(current_token) == std::mem::discriminant(&expected);
@@ -51,39 +67,23 @@ impl Parser {
 
     // 式を解析
     pub fn parse_statement(&mut self) -> Result<Expr, String> {
-        let current_token = self.current_token().ok_or("Unexpected end of input".to_string())?;
-        match current_token {
-            Token::Function => self.parse_function_def(),
-            Token::Ident(ident) => {
-                let next_token = self.peek_token();
-                match next_token {
-                    Some(Token::Assignment) => self.parse_assignment(),
-                    Some(Token::LParen) => self.parse_function_call(),
-                    Some(Token::Plus) | Some(Token::Minus) | Some(Token::Star) | Some(Token::Slash) | Some(Token::LessThan) | Some(Token::GreaterThan) => self.parse_expression_statement(),
-                    _ => Err(format!("Unexpected token after identifier '{}': {:?}", ident, next_token)),
-                }
+        let stmt = match self.current_token() {
+            Some(Token::Function) => self.parse_function_def(),
+            Some(Token::If) => self.parse_if_expr(),
+            Some(Token::While) => self.parse_while_loop(),
+            Some(Token::Return) => self.parse_return_statement(),
+            Some(Token::Ident(_)) => match self.peek_token() {
+                Some(Token::LParen) => self.parse_function_call(),
+                Some(Token::Assignment) => self.parse_assignment(),
+                _ => self.parse_expression(),
             },
-            Token::Plus | Token::Minus | Token::Star | Token::Slash => self.parse_expression_statement(),
-            Token::Return => self.parse_return_statement(),
-            Token::If => self.parse_if_expr(),
-            Token::While => self.parse_while_loop(),
-            _ => Err(format!("Unsupported statement or unexpected token: {:?}", current_token)),
+            _ => self.parse_expression(),
+        }?;
+        if matches!(self.current_token(), Some(Token::Semicolon)) {
+            self.next_token(); // Consume the semicolon
         }
-    }
-
-    // 式文を解析    
-    fn parse_expression_statement(&mut self) -> Result<Expr, String> {
-        let expr = self.parse_expression()?;
-        match self.peek_token() {
-            Some(Token::Semicolon) => {
-                self.consume_token(Token::Semicolon)?;
-                println!("Consumed semicolon after expression.");
-            }
-            _ => return Err("Expected semicolon after expression.".to_string()),
-        }
-        Ok(expr)
-    }
-
+        Ok(stmt)
+    } 
 
     // ブロックを解析
     fn parse_block(&mut self) -> Result<Expr, String> {
@@ -135,38 +135,26 @@ impl Parser {
         println!("Parsing expression");
         self.parse_binary_operator() // 二項演算子を解析 
     }
-    
-    
-    
+     
     fn parse_binary_operator(&mut self) -> Result<Expr, String> {
         let mut expr = self.parse_primary()?;
-        println!("Parsed primary expression: {:?}", expr);
 
-        while let Some(op) = self.peek_token().cloned() {
-            match op {
-                Token::Plus | Token::Minus | Token::Star | Token::Slash => {
-                    println!("Found binary operator: {:?}", op);
-                    self.next_token(); // Move past the operator
-                    let right = self.parse_primary()?;
-                    println!("Parsed right-hand side expression: {:?}", right);
-                    expr = Expr::BinaryOp {
-                        left: Box::new(expr),
-                        op: match op {
-                            Token::Plus => Op::Add,
-                            Token::Minus => Op::Subtract,
-                            Token::Star => Op::Multiply,
-                            Token::Slash => Op::Divide,
-                            _ => unreachable!(),
-                        },
-                        right: Box::new(right),
-                    };
-                }
-                _ => {
-                    println!("No further operators, ending binary operation parsing.");
-                    break;
-                }
-            }
+        while let Some(op) = match self.current_token() {
+            Some(Token::Plus) => Some(Op::Add),
+            Some(Token::Minus) => Some(Op::Subtract),
+            Some(Token::Star) => Some(Op::Multiply),
+            Some(Token::Slash) => Some(Op::Divide),
+            _ => None,
+        } {
+            self.next_token(); // Skip the operator
+            let right = self.parse_primary()?;
+            expr = Expr::BinaryOp {
+                left: Box::new(expr),
+                op,
+                right: Box::new(right),
+            };
         }
+
         Ok(expr)
     }
 
