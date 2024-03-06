@@ -52,15 +52,19 @@ impl Parser {
     // 式を解析
     pub fn parse_statement(&mut self) -> Result<Expr, String> {
         let stmt = match self.current_token() {
+            Some(Token::While) => {
+                println!("Parsing WhileLoop");
+                self.parse_while_loop()
+            },
             Some(Token::Function) => self.parse_function_def(),
             Some(Token::If) => self.parse_if_expr(),
-            Some(Token::While) => self.parse_while_loop(),
             Some(Token::Return) => self.parse_return_statement(),
             Some(Token::Ident(_)) => match self.peek_token() {
                 Some(Token::LParen) => self.parse_function_call(),
                 Some(Token::Assignment) => self.parse_assignment(),
                 _ => self.parse_expression(),
             },
+            Some(Token::LBrace) => self.parse_block(),
             _ => self.parse_expression(),
         }?;
         if matches!(self.current_token(), Some(Token::Semicolon)) {
@@ -128,6 +132,12 @@ impl Parser {
             Some(Token::Minus) => Some(Op::Subtract),
             Some(Token::Star) => Some(Op::Multiply),
             Some(Token::Slash) => Some(Op::Divide),
+            Some(Token::LessThan) => Some(Op::LessThan),
+            Some(Token::GreaterThan) => Some(Op::GreaterThan),
+            // Some(Token::LessThanEqual) => Some(Op::LessThanEqual),
+            // Some(Token::GreaterThanEqual) => Some(Op::GreaterThanEqual),
+            // Some(Token::EqualEqual) => Some(Op::Equal),
+            // Some(Token::NotEqual) => Some(Op::NotEqual),
             _ => None,
         } {
             self.next_token(); // Skip the operator

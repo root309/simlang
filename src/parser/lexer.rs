@@ -203,6 +203,10 @@ pub fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
             map(identifier, |ident: Token| {
                 match &ident {
                     Token::Ident(name) if name == "function" => Token::Function,
+                    Token::Ident(name) if name == "while" => Token::While,
+                    Token::Ident(name) if name == "if" => Token::If,
+                    Token::Ident(name) if name == "else" => Token::Else,
+                    Token::Ident(name) if name == "return" => Token::Return,
                     _ => ident,
                 }
             }),

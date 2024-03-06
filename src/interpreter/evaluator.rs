@@ -119,6 +119,7 @@ impl Evaluator {
         condition: Expr, 
         body: Expr
     ) -> Result<EvaluationResult, String> {
+        println!("Evaluating WhileLoop");
         loop {
             let condition_result = self.evaluate(condition.clone())?;
             match condition_result {
