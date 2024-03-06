@@ -17,7 +17,9 @@ pub struct Parser {
 impl Parser { 
     // return current token
     fn current_token(&self) -> Option<&Token> {
-       self.tokens.get(self.current) 
+       let token = self.tokens.get(self.current);
+       println!("Current token: {:?}", token);
+       token
     }
 
     // return next token(advance the current token by 1)
@@ -98,6 +100,7 @@ impl Parser {
     
     fn parse_identifier(&mut self) -> Result<String, String> {
         if let Some(Token::Ident(name)) = self.current_token() {
+            println!("Identified: {}", name);
             let name_clone = name.clone();
             self.next_token();
             Ok(name_clone)
@@ -173,17 +176,23 @@ impl Parser {
         Ok(args)
     }
 
+    
     fn parse_function_def(&mut self) -> Result<Expr, String> {
+        println!("Parsing function definition.");
         self.consume_token(Token::Function)?;
+
         let name = self.parse_identifier()?;
+
         let parameters = self.parse_parameters()?;
         let body = self.parse_block()?;
+
         Ok(Expr::FunctionDef {
             name,
             params: parameters,
             body: Box::new(body),
         })
     }
+
 
     fn parse_function_call(&mut self) -> Result<Expr, String> {
         let name = self.parse_identifier()?;

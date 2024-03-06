@@ -5,7 +5,7 @@ use sim::interpreter::evaluator::{Evaluator, EvaluationResult};
 fn main() {
     let source_code = std::fs::read_to_string("examples/a.sim")
         .expect("Failed to read the source file.");
-
+    println!("Source code: {}", source_code);
     let (_, tokens) = tokenizer(&source_code)
         .expect("Failed to tokenize the source code.");
 
