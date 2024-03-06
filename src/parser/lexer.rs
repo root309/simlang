@@ -7,6 +7,7 @@ use nom::{
         //space0,
         //space1,
         multispace0,
+        multispace1,
         //none_of,
         char,
         //line_ending,
@@ -49,19 +50,11 @@ use nom::{
     //error::VerboseError,
 };
 
-// 識別子を解析
-fn identifier(input: &str) -> IResult<&str, Token> {
-    println!("Trying identifier with input: {}", input);
-    // 識別子がアルファベットまたはアンダースコアで始まることを確認
-    let start_parser = take_while1(|c: char| c.is_alphabetic() || c == '_');
-    // 続く文字がアルファベット、数字、アンダースコアの任意の組み合わせであることを確認
-    let rest_parser = take_while(|c: char| c.is_alphanumeric() || c == '_');
-    // 両方のパーサーを組み合わせる
-    let mut combined_parser = recognize(pair(start_parser, rest_parser));
-
-    let (input, ident) = combined_parser(input)?;
-    println!("Identifier parsed: {}", ident);
-    Ok((input, Token::Ident(ident.to_string())))
+pub fn display_tokens(tokens: &[Token]) {
+    println!("Generated tokens(display_tokens method):");
+    for (index, token) in tokens.iter().enumerate() {
+        println!("{}: {:?}", index, token);
+    }
 }
 
 // 整数リテラルを解析
@@ -130,8 +123,8 @@ fn assignment(input: &str) -> IResult<&str, Token> {
     println!("Trying assignment with input: {}", input);
     let result = map(ws(char('=')), |_| Token::Assignment)(input);
     match &result {
-        Ok((remaining, _)) => println!("Assignment success, remaining: {}", remaining),
-        Err(_) => println!("Assignment failed"),
+        Ok((remaining, _)) => println!("Assignment parsed successfully, remaining input: {}", remaining),
+        Err(_) => println!("Failed to parse assignment"),
     }
     result
 }
@@ -166,27 +159,54 @@ fn semicolon(input: &str) -> IResult<&str, Token> {
     map(ws(char(';')), |_| Token::Semicolon)(input)
 }
 
-// キーワードの解析関数
-fn keyword(input: &str) -> IResult<&str, Token> {
-    preceded(
-        multispace0,
-        alt((
-            map(tag("function"), |_| Token::Function),
-            map(tag("if"), |_| Token::If),
-            map(tag("else"), |_| Token::Else),
-            map(tag("while"), |_| Token::While),
-            map(tag("return"), |_| Token::Return),
-        )),
-    )(input)
+// ','
+fn comma(input: &str) -> IResult<&str, Token> {
+    map(ws(char(',')), |_| Token::Comma)(input)
 }
 
+// キーワードの解析関数
+fn keyword(input: &str) -> IResult<&str, Token> {
+    alt((
+        map(tag("function"), |_| Token::Function),
+        map(tag("if"), |_| Token::If),
+        map(tag("else"), |_| Token::Else),
+        map(tag("while"), |_| Token::While),
+        map(tag("return"), |_| Token::Return),
+    ))(input).and_then(|(next_input, token)| {
+        multispace1(next_input).map(|(final_input, _)| (final_input, token))
+    })
+}
+
+// 識別子を解析
+fn identifier(input: &str) -> IResult<&str, Token> {
+    println!("Trying identifier with input: {}", input);
+    let start_parser = take_while1(|c: char| c.is_alphabetic() || c == '_');
+    let rest_parser = take_while(|c: char| c.is_alphanumeric() || c == '_');
+    let mut combined_parser = recognize(pair(start_parser, rest_parser));
+
+    let result = combined_parser(input);
+    match &result {
+        Ok((remaining, ident)) => {
+            println!("Identifier parsed successfully: {}, remaining input: {}", ident, remaining);
+        },
+        Err(_) => println!("Failed to parse identifier"),
+    }
+    result.map(|(remaining, ident)| (remaining, Token::Ident(ident.to_string())))
+}
 
 pub fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
+    let (input, _) = multispace0(input)?;
+
     let (remaining_input, mut tokens) = many0(
         alt((
             keyword,
+            map(identifier, |ident: Token| {
+                match &ident {
+                    Token::Ident(name) if name == "function" => Token::Function,
+                    _ => ident,
+                }
+            }),
             integer,
-            identifier,
             string_literal,
             plus,
             minus,
@@ -202,12 +222,16 @@ pub fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
             l_brace,
             r_brace,
             semicolon,
+            comma,
         )),
     )(input)?;
 
     println!("Remaining input: {:?}", remaining_input); // 残りの入力を表示
     println!("Tokens: {:?}", tokens); // 解析したトークンを表示
-                                      
+    for token in &tokens {
+        println!("Token: {:?}", token);
+    }                             
+    display_tokens(&tokens);
     // 入力が完全に消費された場合EOFトークンを追加
     if remaining_input.is_empty() {
         tokens.push(Token::EOF);
@@ -291,7 +315,12 @@ mod tests {
 
     #[test]
     fn test_function_def() {
-        let input = "function add(a, b) { return a + b; };";
+        let input = "
+            function add(a, b) 
+            { 
+                return a + b; 
+            };
+        ";
         assert!(tokenizer(input).is_ok());
     }
 }
