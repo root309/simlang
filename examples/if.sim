@@ -1,0 +1,5 @@
+nyarn = 30;
+yarn = 20;
+
+if (nyarn < yarn) { 10; }
+else { 5; }
