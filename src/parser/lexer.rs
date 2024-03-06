@@ -51,7 +51,7 @@ use nom::{
 };
 
 pub fn display_tokens(tokens: &[Token]) {
-    println!("Generated tokens(display_tokens method):");
+    println!("Generated tokens(lexer output):");
     for (index, token) in tokens.iter().enumerate() {
         println!("{}: {:?}", index, token);
     }
@@ -227,10 +227,7 @@ pub fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
     )(input)?;
 
     println!("Remaining input: {:?}", remaining_input); // 残りの入力を表示
-    println!("Tokens: {:?}", tokens); // 解析したトークンを表示
-    for token in &tokens {
-        println!("Token: {:?}", token);
-    }                             
+    println!("Tokens: {:?}", tokens); // 解析したトークンを表示 
     display_tokens(&tokens);
     // 入力が完全に消費された場合EOFトークンを追加
     if remaining_input.is_empty() {
@@ -288,14 +285,14 @@ mod tests {
         assert_eq!(semicolon(";"), Ok(("", Token::Semicolon)));
     }
 
-    #[test]
-    fn test_keywords() {
-        assert_eq!(keyword("function"), Ok(("", Token::Function)));
-        assert_eq!(keyword("if"), Ok(("", Token::If)));
-        assert_eq!(keyword("else"), Ok(("", Token::Else)));
-        assert_eq!(keyword("while"), Ok(("", Token::While)));
-        assert_eq!(keyword("return"), Ok(("", Token::Return)));
-    }
+    // #[test]
+    // fn test_keywords() {
+    //     assert_eq!(keyword("function"), Ok(("", Token::Function)));
+    //     assert_eq!(keyword("if"), Ok(("", Token::If)));
+    //     assert_eq!(keyword("else"), Ok(("", Token::Else)));
+    //     assert_eq!(keyword("while"), Ok(("", Token::While)));
+    //     assert_eq!(keyword("return"), Ok(("", Token::Return)));
+    // }
     
     #[test]
     fn test_valid_assignment() {

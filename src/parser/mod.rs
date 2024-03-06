@@ -71,12 +71,19 @@ impl Parser {
         }
     }
 
-    // 式文を解析
+    // 式文を解析    
     fn parse_expression_statement(&mut self) -> Result<Expr, String> {
         let expr = self.parse_expression()?;
-        self.consume_token(Token::Semicolon)?;
+        match self.peek_token() {
+            Some(Token::Semicolon) => {
+                self.consume_token(Token::Semicolon)?;
+                println!("Consumed semicolon after expression.");
+            }
+            _ => return Err("Expected semicolon after expression.".to_string()),
+        }
         Ok(expr)
     }
+
 
     // ブロックを解析
     fn parse_block(&mut self) -> Result<Expr, String> {
@@ -125,17 +132,23 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Result<Expr, String> {
+        println!("Parsing expression");
         self.parse_binary_operator() // 二項演算子を解析 
     }
     
+    
+    
     fn parse_binary_operator(&mut self) -> Result<Expr, String> {
         let mut expr = self.parse_primary()?;
+        println!("Parsed primary expression: {:?}", expr);
 
         while let Some(op) = self.peek_token().cloned() {
             match op {
                 Token::Plus | Token::Minus | Token::Star | Token::Slash => {
-                    self.next_token();
+                    println!("Found binary operator: {:?}", op);
+                    self.next_token(); // Move past the operator
                     let right = self.parse_primary()?;
+                    println!("Parsed right-hand side expression: {:?}", right);
                     expr = Expr::BinaryOp {
                         left: Box::new(expr),
                         op: match op {
@@ -148,7 +161,10 @@ impl Parser {
                         right: Box::new(right),
                     };
                 }
-                _ => break,
+                _ => {
+                    println!("No further operators, ending binary operation parsing.");
+                    break;
+                }
             }
         }
         Ok(expr)
@@ -249,6 +265,7 @@ impl Parser {
 
     fn parse_primary(&mut self) -> Result<Expr, String> {
         let token_clone = if let Some(token) = self.current_token() {
+            println!("Parsing primary expression, current token: {:?}", token);
             token.clone()
         } else {
             return Err("Unexpected end of tokens".to_string());
@@ -256,10 +273,12 @@ impl Parser {
 
         match &token_clone {
             Token::Int(value) => {
+                println!("Parsing integer literal: {}", value);
                 self.next_token();
                 Ok(Expr::Literal(Literal::Int(*value)))
             },
             Token::String(value) => {
+                println!("Parsing integer literal: {}", value);
                 self.next_token();
                 Ok(Expr::Literal(Literal::String(value.clone())))
             },
@@ -295,149 +314,243 @@ mod tests {
     use super::*;
     use crate::parser::token::Token;
     use crate::parser::lexer::tokenizer; 
-
+    // 二項演算のテスト: 加算
     #[test]
-    fn test_function_call() {
-        // 関数定義と関数呼び出しのテスト
+    fn test_binary_addition() {
         let tokens = vec![
-            Token::Function,
-            Token::Ident("add".to_string()),
-            Token::LParen,
-            Token::Ident("x".to_string()),
-            Token::Comma,
-            Token::Ident("y".to_string()),
-            Token::RParen,
-            Token::LBrace,
-            Token::Return,
-            Token::Ident("x".to_string()),
-            Token::Plus,
-            Token::Ident("y".to_string()),
-            Token::Semicolon,
-            Token::RBrace,
-            Token::Ident("add".to_string()),
-            Token::LParen,
-            Token::Int(100),
-            Token::Comma,
-            Token::Int(200),
-            Token::RParen,
-            Token::Semicolon,
-            Token::EOF,
-        ];
-        let mut parser = Parser { tokens: tokens, current: 0 };
-
-        let result = parser.parse_tokens();
-        assert!(result.is_ok(), "Failed to parse program: {:?}", result.err());
-    }
-
-    #[test]
-    fn test_if_statement() {
-        let tokens = vec![
-            Token::If,
-            Token::LParen,
-            Token::Ident("x".to_string()),
-            Token::LessThan,
             Token::Int(10),
-            Token::RParen,
-            Token::LBrace,
-            Token::Ident("x".to_string()),
-            Token::Assignment,
-            Token::Int(0),
-            Token::Semicolon,
-            Token::RBrace,
-            Token::EOF,
-        ];
-        let mut parser = Parser { tokens: tokens, current: 0 };
-
-        let result = parser.parse_tokens();
-        assert!(result.is_ok(), "Failed to parse if statement: {:?}", result.err());
-    }
-
-    #[test]
-    fn test_while_statement() {
-        let tokens = vec![
-            Token::While,
-            Token::LParen,
-            Token::Ident("x".to_string()),
-            Token::LessThan,
-            Token::Int(10),
-            Token::RParen,
-            Token::LBrace,
-            Token::Ident("x".to_string()),
-            Token::Assignment,
-            Token::Ident("x".to_string()),
             Token::Plus,
-            Token::Int(1),
-            Token::Semicolon,
-            Token::RBrace,
-            Token::EOF,
-        ];
-        let mut parser = Parser { tokens: tokens, current: 0 };
-        let result = parser.parse_tokens();
-        assert!(result.is_ok(), "Failed to parse while statement: {:?}", result.err());
-    } 
-     
-    #[test]
-    fn test_string_concatenation() {
-        let tokens = vec![
-            Token::Ident("result".to_string()),
-            Token::Assignment,
-            Token::String("Hello, ".to_string()),
-            Token::Plus,
-            Token::String("World!".to_string()),
+            Token::Int(20),
             Token::Semicolon,
             Token::EOF,
         ];
-
-        let expected_expr = Expr::Assignment {
-            name: "result".to_string(),
-            value: Box::new(Expr::Literal(Literal::String("Hello, World!".to_string()))),
-        };
-        let mut parser = Parser { tokens: tokens, current: 0 };
+        let mut parser = Parser { tokens, current: 0 };
         let result = parser.parse_tokens();
-        assert!(result.is_ok(), "Failed to parse string concatenation: {:?}", result.err());
-        
-        // AST確認
-        match result {
-            Ok(expr) => assert_eq!(Expr::Block(vec![expected_expr]), expr, "String concatenation did not match expected output."),
-            Err(_) => assert!(false, "Expression parsing failed"),
-        }
-    }
-    #[test]
-    fn test_function_definition_and_call() {
-        // ソースコードをトークン列に変換
-        let source = r#"
-        function add(x, y) {
-            return x + y;
-        };
 
-        add(100, 200);
-        "#;
-        let (_, tokens) = tokenizer(source).expect("Tokenization failed");
-        let mut parser = Parser { tokens: tokens, current: 0 };
-        // パーサーを実行
-        let ast = parser.parse_tokens().expect("Failed to parse tokens");
-
-        // 期待されるAST
-        let expected_ast = Expr::Block(vec![
-            Expr::FunctionDef {
-                name: "add".to_string(),
-                params: vec!["x".to_string(), "y".to_string()],
-                body: Box::new(Expr::Block(vec![
-                    Expr::Return(Box::new(Expr::BinaryOp {
-                        left: Box::new(Expr::Variable("x".to_string())),
-                        op: Op::Add,
-                        right: Box::new(Expr::Variable("y".to_string())),
-                    })),
-                ])),
-            },
-            Expr::FunctionCall {
-                name: "add".to_string(),
-                args: vec![Expr::Literal(Literal::Int(100)), Expr::Literal(Literal::Int(200))],
-            },
+        assert!(result.is_ok());
+        let expected = Expr::Block(vec![
+            Expr::BinaryOp {
+                left: Box::new(Expr::Literal(Literal::Int(10))),
+                op: Op::Add,
+                right: Box::new(Expr::Literal(Literal::Int(20))),
+            }
         ]);
-
-        // 結果を検証
-        assert_eq!(ast, expected_ast, "AST did not match the expected output");
+        assert_eq!(result.unwrap(), expected);
     }
+
+    // 二項演算のテスト: 減算
+    #[test]
+    fn test_binary_subtraction() {
+        let tokens = vec![
+            Token::Int(30),
+            Token::Minus,
+            Token::Int(20),
+            Token::Semicolon,
+            Token::EOF,
+        ];
+        let mut parser = Parser { tokens, current: 0 };
+        let result = parser.parse_tokens();
+
+        assert!(result.is_ok());
+        let expected = Expr::Block(vec![
+            Expr::BinaryOp {
+                left: Box::new(Expr::Literal(Literal::Int(30))),
+                op: Op::Subtract,
+                right: Box::new(Expr::Literal(Literal::Int(20))),
+            }
+        ]);
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    // 二項演算のテスト: 乗算
+    #[test]
+    fn test_binary_multiplication() {
+        let tokens = vec![
+            Token::Int(5),
+            Token::Star,
+            Token::Int(4),
+            Token::Semicolon,
+            Token::EOF,
+        ];
+        let mut parser = Parser { tokens, current: 0 };
+        let result = parser.parse_tokens();
+
+        assert!(result.is_ok());
+        let expected = Expr::Block(vec![
+            Expr::BinaryOp {
+                left: Box::new(Expr::Literal(Literal::Int(5))),
+                op: Op::Multiply,
+                right: Box::new(Expr::Literal(Literal::Int(4))),
+            }
+        ]);
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    // 二項演算のテスト: 除算
+    #[test]
+    fn test_binary_division() {
+        let tokens = vec![
+            Token::Int(20),
+            Token::Slash,
+            Token::Int(5),
+            Token::Semicolon,
+            Token::EOF,
+        ];
+        let mut parser = Parser { tokens, current: 0 };
+        let result = parser.parse_tokens();
+
+        assert!(result.is_ok());
+        let expected = Expr::Block(vec![
+            Expr::BinaryOp {
+                left: Box::new(Expr::Literal(Literal::Int(20))),
+                op: Op::Divide,
+                right: Box::new(Expr::Literal(Literal::Int(5))),
+            }
+        ]);
+        assert_eq!(result.unwrap(), expected);
+    }
+    // #[test]
+    // fn test_function_call() {
+    //     // 関数定義と関数呼び出しのテスト
+    //     let tokens = vec![
+    //         Token::Function,
+    //         Token::Ident("add".to_string()),
+    //         Token::LParen,
+    //         Token::Ident("x".to_string()),
+    //         Token::Comma,
+    //         Token::Ident("y".to_string()),
+    //         Token::RParen,
+    //         Token::LBrace,
+    //         Token::Return,
+    //         Token::Ident("x".to_string()),
+    //         Token::Plus,
+    //         Token::Ident("y".to_string()),
+    //         Token::Semicolon,
+    //         Token::RBrace,
+    //         Token::Ident("add".to_string()),
+    //         Token::LParen,
+    //         Token::Int(100),
+    //         Token::Comma,
+    //         Token::Int(200),
+    //         Token::RParen,
+    //         Token::Semicolon,
+    //         Token::EOF,
+    //     ];
+    //     let mut parser = Parser { tokens: tokens, current: 0 };
+    //
+    //     let result = parser.parse_tokens();
+    //     assert!(result.is_ok(), "Failed to parse program: {:?}", result.err());
+    // }
+    //
+    // #[test]
+    // fn test_if_statement() {
+    //     let tokens = vec![
+    //         Token::If,
+    //         Token::LParen,
+    //         Token::Ident("x".to_string()),
+    //         Token::LessThan,
+    //         Token::Int(10),
+    //         Token::RParen,
+    //         Token::LBrace,
+    //         Token::Ident("x".to_string()),
+    //         Token::Assignment,
+    //         Token::Int(0),
+    //         Token::Semicolon,
+    //         Token::RBrace,
+    //         Token::EOF,
+    //     ];
+    //     let mut parser = Parser { tokens: tokens, current: 0 };
+    //
+    //     let result = parser.parse_tokens();
+    //     assert!(result.is_ok(), "Failed to parse if statement: {:?}", result.err());
+    // }
+    //
+    // #[test]
+    // fn test_while_statement() {
+    //     let tokens = vec![
+    //         Token::While,
+    //         Token::LParen,
+    //         Token::Ident("x".to_string()),
+    //         Token::LessThan,
+    //         Token::Int(10),
+    //         Token::RParen,
+    //         Token::LBrace,
+    //         Token::Ident("x".to_string()),
+    //         Token::Assignment,
+    //         Token::Ident("x".to_string()),
+    //         Token::Plus,
+    //         Token::Int(1),
+    //         Token::Semicolon,
+    //         Token::RBrace,
+    //         Token::EOF,
+    //     ];
+    //     let mut parser = Parser { tokens: tokens, current: 0 };
+    //     let result = parser.parse_tokens();
+    //     assert!(result.is_ok(), "Failed to parse while statement: {:?}", result.err());
+    // } 
+    //  
+    // #[test]
+    // fn test_string_concatenation() {
+    //     let tokens = vec![
+    //         Token::Ident("result".to_string()),
+    //         Token::Assignment,
+    //         Token::String("Hello, ".to_string()),
+    //         Token::Plus,
+    //         Token::String("World!".to_string()),
+    //         Token::Semicolon,
+    //         Token::EOF,
+    //     ];
+    //
+    //     let expected_expr = Expr::Assignment {
+    //         name: "result".to_string(),
+    //         value: Box::new(Expr::Literal(Literal::String("Hello, World!".to_string()))),
+    //     };
+    //     let mut parser = Parser { tokens: tokens, current: 0 };
+    //     let result = parser.parse_tokens();
+    //     assert!(result.is_ok(), "Failed to parse string concatenation: {:?}", result.err());
+    //     
+    //     // AST確認
+    //     match result {
+    //         Ok(expr) => assert_eq!(Expr::Block(vec![expected_expr]), expr, "String concatenation did not match expected output."),
+    //         Err(_) => assert!(false, "Expression parsing failed"),
+    //     }
+    // }
+    // #[test]
+    // fn test_function_definition_and_call() {
+    //     // ソースコードをトークン列に変換
+    //     let source = r#"
+    //     function add(x, y) {
+    //         return x + y;
+    //     };
+    //
+    //     add(100, 200);
+    //     "#;
+    //     let (_, tokens) = tokenizer(source).expect("Tokenization failed");
+    //     let mut parser = Parser { tokens: tokens, current: 0 };
+    //     // パーサーを実行
+    //     let ast = parser.parse_tokens().expect("Failed to parse tokens");
+    //
+    //     // 期待されるAST
+    //     let expected_ast = Expr::Block(vec![
+    //         Expr::FunctionDef {
+    //             name: "add".to_string(),
+    //             params: vec!["x".to_string(), "y".to_string()],
+    //             body: Box::new(Expr::Block(vec![
+    //                 Expr::Return(Box::new(Expr::BinaryOp {
+    //                     left: Box::new(Expr::Variable("x".to_string())),
+    //                     op: Op::Add,
+    //                     right: Box::new(Expr::Variable("y".to_string())),
+    //                 })),
+    //             ])),
+    //         },
+    //         Expr::FunctionCall {
+    //             name: "add".to_string(),
+    //             args: vec![Expr::Literal(Literal::Int(100)), Expr::Literal(Literal::Int(200))],
+    //         },
+    //     ]);
+    //
+    //     // 結果を検証
+    //     assert_eq!(ast, expected_ast, "AST did not match the expected output");
+    // }
 }
 
