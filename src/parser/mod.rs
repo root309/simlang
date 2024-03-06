@@ -15,9 +15,6 @@ pub struct Parser {
 }
 
 impl Parser { 
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, current: 0 }
-    }
     // return current token
     fn current_token(&self) -> Option<&Token> {
        let token = self.tokens.get(self.current);
@@ -37,20 +34,7 @@ impl Parser {
         } else {
             None
         }
-    }
-
-    fn expect_token(&mut self, expected: Token) -> Result<(), String> {
-        if let Some(token) = self.current_token() {
-            if std::mem::discriminant(token) == std::mem::discriminant(&expected) {
-                self.next_token();
-                Ok(())
-            } else {
-                Err(format!("Expected {:?}, found {:?}", expected, token))
-            }
-        } else {
-            Err("No more tokens available".into())
-        }
-    }
+    } 
 
     fn consume_token(&mut self, expected: Token) -> Result<Token, String> {
         if let Some(current_token) = self.current_token() {
@@ -170,16 +154,21 @@ impl Parser {
 
     fn parse_arguments(&mut self) -> Result<Vec<Expr>, String> {
         let mut args = Vec::new();
-        while self.peek_token() != Some(&Token::RParen) {
-            args.push(self.parse_expression()?);
-            if self.peek_token() == Some(&Token::Comma) {
-                self.consume_token(Token::Comma)?;
+
+        loop {
+            let expr = self.parse_expression()?;
+            args.push(expr);
+
+            match self.current_token() {
+                Some(Token::Comma) => { 
+                    self.consume_token(Token::Comma)?; 
+                    println!("match");
+                },
+                _ => break,
             }
         }
-        self.consume_token(Token::RParen)?;
         Ok(args)
     }
-
     
     fn parse_function_def(&mut self) -> Result<Expr, String> {
         println!("Parsing function definition.");
@@ -196,7 +185,6 @@ impl Parser {
             body: Box::new(body),
         })
     }
-
 
     fn parse_function_call(&mut self) -> Result<Expr, String> {
         let name = self.parse_identifier()?;
