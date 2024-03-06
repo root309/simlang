@@ -1,13 +1,13 @@
 It is still under development and is not nearly as functional as a programming language.
 
-#### repl
+### repl
 ```
 cargo run
 ```
 ```sh
 λ 10 + 10;
 ```
-#### source
+### source file
 cargo run filename.sim
 
 
