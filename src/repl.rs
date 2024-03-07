@@ -2,12 +2,30 @@ use std::io::{self, Write};
 use sim::parser::lexer::tokenizer;
 use sim::parser::Parser;
 use sim::interpreter::evaluator::{Evaluator, EvaluationResult};
+use sim::parser::ast;
+
 
 pub fn run_repl() {
+    let ascii_art = "
+\x1b[34m███████╗██╗███╗   ███╗
+██╔════╝██║████╗ ████║
+███████╗██║██╔████╔██║
+╚════██║██║██║╚██╔╝██║
+███████║██║██║ ╚═╝ ██║
+╚══════╝╚═╝╚═╝     ╚═╝\x1b[0m
+
+
+Welcome to the SIM language REPL.
+Small interpreter language.
+Type 'exit' to exit.
+";
+
+    println!("{}", ascii_art);
+
     let mut evaluator = Evaluator::new();
 
     loop {
-        print!("λ ");
+        print!("\x1b[34mλ\x1b[0m ");
         io::stdout().flush().expect("Failed to flush stdout.");
 
         let mut input = String::new();
@@ -36,9 +54,11 @@ pub fn run_repl() {
 
                 match evaluator.evaluate(ast) {
                     Ok(result) => match result {
-                        EvaluationResult::Value(val) => println!("{:?}", val),
-                        EvaluationResult::ReturnValue(val) => println!("{:?}", val),
-                        _ => println!("No value returned."),
+                        EvaluationResult::Value(val) | EvaluationResult::ReturnValue(val) => match val {
+                            ast::Literal::Int(i) => println!("{}", i),
+                            ast::Literal::String(s) => println!("{}", s),
+                            _ => println!("{:?}", val),
+                        },
                     },
                     Err(e) => println!("Error: {}", e),
                 }
@@ -47,3 +67,4 @@ pub fn run_repl() {
         }
     }
 }
+
