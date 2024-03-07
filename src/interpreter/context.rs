@@ -19,7 +19,7 @@ impl Value {
 }
 
 pub struct Context {
-    variables: HashMap<String, Value>,
+    //variables: HashMap<String, Value>,
     functions: HashMap<String, (Vec<String>, Box<Expr>)>,    
     // 変数のスコープを管理するスタック
     variable_stack: Vec<HashMap<String, Value>>,
@@ -28,7 +28,7 @@ pub struct Context {
 impl Context {
     pub fn new() -> Self {
         Context {
-            variables: HashMap::new(),
+            //variables: HashMap::new(),
             functions: HashMap::new(),
             variable_stack: vec![HashMap::new()],
         }

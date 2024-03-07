@@ -2,10 +2,10 @@ pub mod lexer;
 pub mod token;
 pub mod ast;
 
-use crate::utils::{
-    debug_token,
-    debug_log,
-};
+//use crate::utils::{
+    //debug_token,
+    //debug_log,
+//};
 use crate::parser::ast::{Expr, Op, Literal};
 use crate::parser::token::Token;
 
@@ -18,7 +18,7 @@ impl Parser {
     // return current token
     fn current_token(&self) -> Option<&Token> {
        let token = self.tokens.get(self.current);
-       println!("Current token: {:?}", token);
+       //println!("Current token: {:?}", token);
        token
     }
 
@@ -53,7 +53,7 @@ impl Parser {
     pub fn parse_statement(&mut self) -> Result<Expr, String> {
         let stmt = match self.current_token() {
             Some(Token::While) => {
-                println!("Parsing WhileLoop");
+                //println!("Parsing WhileLoop");
                 self.parse_while_loop()
             },
             Some(Token::Function) => self.parse_function_def(),
@@ -95,7 +95,7 @@ impl Parser {
     
     fn parse_identifier(&mut self) -> Result<String, String> {
         if let Some(Token::Ident(name)) = self.current_token() {
-            println!("Identified: {}", name);
+            //println!("Identified: {}", name);
             let name_clone = name.clone();
             self.next_token();
             Ok(name_clone)
@@ -120,7 +120,7 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Result<Expr, String> {
-        println!("Parsing expression");
+        //println!("Parsing expression");
         self.parse_binary_operator() // 二項演算子を解析 
     }
      
@@ -172,7 +172,7 @@ impl Parser {
             match self.current_token() {
                 Some(Token::Comma) => { 
                     self.consume_token(Token::Comma)?; 
-                    println!("match");
+                    //println!("match");
                 },
                 _ => break,
             }
@@ -181,7 +181,7 @@ impl Parser {
     }
     
     fn parse_function_def(&mut self) -> Result<Expr, String> {
-        println!("Parsing function definition.");
+        //println!("Parsing function definition.");
         self.consume_token(Token::Function)?;
 
         let name = self.parse_identifier()?;
@@ -251,7 +251,7 @@ impl Parser {
 
     fn parse_primary(&mut self) -> Result<Expr, String> {
         let token_clone = if let Some(token) = self.current_token() {
-            println!("Parsing primary expression, current token: {:?}", token);
+            //println!("Parsing primary expression, current token: {:?}", token);
             token.clone()
         } else {
             return Err("Unexpected end of tokens".to_string());
@@ -259,12 +259,12 @@ impl Parser {
 
         match &token_clone {
             Token::Int(value) => {
-                println!("Parsing integer literal: {}", value);
+                //println!("Parsing integer literal: {}", value);
                 self.next_token();
                 Ok(Expr::Literal(Literal::Int(*value)))
             },
             Token::String(value) => {
-                println!("Parsing integer literal: {}", value);
+                //println!("Parsing integer literal: {}", value);
                 self.next_token();
                 Ok(Expr::Literal(Literal::String(value.clone())))
             },

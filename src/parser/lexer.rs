@@ -44,7 +44,7 @@ use nom::{
     sequence::{
         pair,
         delimited,
-        preceded,
+        //preceded,
         //tuple,
     },
     //error::VerboseError,
@@ -120,12 +120,12 @@ fn greater_than(input: &str) -> IResult<&str, Token> {
 
 // '='
 fn assignment(input: &str) -> IResult<&str, Token> {
-    println!("Trying assignment with input: {}", input);
+    //println!("Trying assignment with input: {}", input);
     let result = map(ws(char('=')), |_| Token::Assignment)(input);
-    match &result {
-        Ok((remaining, _)) => println!("Assignment parsed successfully, remaining input: {}", remaining),
-        Err(_) => println!("Failed to parse assignment"),
-    }
+    // match &result {
+    //     Ok((remaining, _)) => println!("Assignment parsed successfully, remaining input: {}", remaining),
+    //     Err(_) => println!("Failed to parse assignment"),
+    // }
     result
 }
 
@@ -179,18 +179,18 @@ fn keyword(input: &str) -> IResult<&str, Token> {
 
 // 識別子を解析
 fn identifier(input: &str) -> IResult<&str, Token> {
-    println!("Trying identifier with input: {}", input);
+    //println!("Trying identifier with input: {}", input);
     let start_parser = take_while1(|c: char| c.is_alphabetic() || c == '_');
     let rest_parser = take_while(|c: char| c.is_alphanumeric() || c == '_');
     let mut combined_parser = recognize(pair(start_parser, rest_parser));
 
     let result = combined_parser(input);
-    match &result {
-        Ok((remaining, ident)) => {
-            println!("Identifier parsed successfully: {}, remaining input: {}", ident, remaining);
-        },
-        Err(_) => println!("Failed to parse identifier"),
-    }
+    // match &result {
+    //     Ok((remaining, ident)) => {
+    //         println!("Identifier parsed successfully: {}, remaining input: {}", ident, remaining);
+    //     },
+    //     Err(_) => println!("Failed to parse identifier"),
+    // }
     result.map(|(remaining, ident)| (remaining, Token::Ident(ident.to_string())))
 }
 
@@ -230,9 +230,9 @@ pub fn tokenizer(input: &str) -> IResult<&str, Vec<Token>> {
         )),
     )(input)?;
 
-    println!("Remaining input: {:?}", remaining_input); // 残りの入力を表示
-    println!("Tokens: {:?}", tokens); // 解析したトークンを表示 
-    display_tokens(&tokens);
+    //println!("Remaining input: {:?}", remaining_input); // 残りの入力を表示
+    //println!("Tokens: {:?}", tokens); // 解析したトークンを表示 
+    //display_tokens(&tokens);
     // 入力が完全に消費された場合EOFトークンを追加
     if remaining_input.is_empty() {
         tokens.push(Token::EOF);

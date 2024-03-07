@@ -1,6 +1,7 @@
 use sim::parser::lexer::tokenizer;
 use sim::parser::Parser;
 use sim::interpreter::evaluator::{Evaluator, EvaluationResult};
+use sim::parser::ast;
 use std::env;
 mod repl;
 
@@ -13,7 +14,7 @@ fn main() {
         let file_name = &args[1];
         let source_code = std::fs::read_to_string(file_name)
             .expect("Failed to read the source file.");
-        println!("Source code: {}", source_code);
+        //println!("Source code: {}", source_code);
         let (_, tokens) = tokenizer(&source_code)
             .expect("Failed to tokenize the source code.");
 
@@ -27,16 +28,18 @@ fn main() {
             },
         };
 
-        println!("AST: {:?}", ast);
+        //println!("AST: {:?}", ast);
 
         let mut evaluator = Evaluator::new();
         let result = evaluator.evaluate(ast)
             .expect("Failed to evaluate the AST.");
 
         match result {
-            EvaluationResult::Value(val) => println!("Result: {:?}", val),
-            EvaluationResult::ReturnValue(val) => println!("Return: {:?}", val),
-            _ => println!("Evaluation did not result in a value or return value."),
+            EvaluationResult::Value(val) | EvaluationResult::ReturnValue(val) => match val {
+                ast::Literal::Int(i) => println!("{}", i),
+                ast::Literal::String(s) => println!("{}", s),
+                _ => println!("{:?}", val),
+            },        
         }
     }
 }
