@@ -1,3 +1,6 @@
+### about
+Small interpreter language.
+
 Under developing.
 
 Example code will work.
