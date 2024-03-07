@@ -1,4 +1,5 @@
-It is still under development and is not nearly as functional as a programming language.
+under dev
+example code will work.
 
 ### repl
 ```
@@ -7,6 +8,10 @@ cargo run
 ```sh
 λ 10 + 10;
 ```
+```sh
+λ nyarn = 10; yarn = 10; nyarn + yarn;
+```
+
 ### source file
 cargo run filename
 
