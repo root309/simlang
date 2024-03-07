@@ -8,7 +8,7 @@ cargo run
 λ 10 + 10;
 ```
 ### source file
-cargo run filename.sim
+cargo run filename
 
 
 #### examples
