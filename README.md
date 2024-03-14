@@ -17,7 +17,7 @@ cargo run
 ```
 
 ### source file
-cargo run filename
+cargo run file.sim
 
 
 #### examples
