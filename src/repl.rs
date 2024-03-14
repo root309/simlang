@@ -6,26 +6,25 @@ use sim::parser::ast;
 
 
 pub fn run_repl() {
-    let ascii_art = "
-\x1b[34m███████╗██╗███╗   ███╗
-██╔════╝██║████╗ ████║
-███████╗██║██╔████╔██║
-╚════██║██║██║╚██╔╝██║
-███████║██║██║ ╚═╝ ██║
-╚══════╝╚═╝╚═╝     ╚═╝\x1b[0m
-
-
-Welcome to the SIM language REPL.
-Small interpreter language.
-Type 'exit' to exit.
-";
-
-    println!("{}", ascii_art);
-
+    let ascii_art = r#"
+        _           _                   
+    ___(_)_ __ ___ | | __ _ _ __   __ _ 
+   / __| | '_ ` _ \| |/ _` | '_ \ / _` |
+   \__ \ | | | | | | | (_| | | | | (_| |
+   |___/_|_| |_| |_|_|\__,_|_| |_|\__, |
+                                  |___/ 
+    "#;
+    let message = "
+    Welcome to the simlang REPL.
+    Small interpreter language.
+    Type 'exit' to exit.
+    ";
+    println!("\x1b[31m{}\x1b[0m", ascii_art);
+    println!("{}", message);
     let mut evaluator = Evaluator::new();
 
     loop {
-        print!("\x1b[34mλ\x1b[0m ");
+        print!("\x1b[31mλ\x1b[0m ");
         io::stdout().flush().expect("Failed to flush stdout.");
 
         let mut input = String::new();
