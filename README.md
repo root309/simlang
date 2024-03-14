@@ -17,8 +17,9 @@ cargo run
 ```
 
 ### source file
+```
 cargo run file.sim
-
+```
 
 #### examples
 - function
