@@ -1,7 +1,7 @@
-use sim::parser::lexer::tokenizer;
-use sim::parser::Parser;
-use sim::interpreter::evaluator::{Evaluator, EvaluationResult};
-use sim::parser::ast;
+use simlang::parser::lexer::tokenizer;
+use simlang::parser::Parser;
+use simlang::interpreter::evaluator::{Evaluator, EvaluationResult};
+use simlang::parser::ast;
 use std::env;
 mod repl;
 
